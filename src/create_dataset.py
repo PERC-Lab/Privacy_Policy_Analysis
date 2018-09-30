@@ -1,9 +1,9 @@
 """Module defining the class for creating the privacy policy dataset"""
 
 import os
+import xml.etree.ElementTree as ET
 from os import path
 
-import xml.etree.ElementTree as ET
 from nltk.tokenize import sent_tokenize
 
 from policy_parser import PolicyParser

@@ -1,11 +1,17 @@
 """Class defining a policy parser"""
 
+import xml.etree.ElementTree as ET
+from os import path
+
+import click
+
+
 class PolicyParser():
     """Class for extracting the privacy policy from the xml element
 
     The PolicyParser is a class that contains the root of the xml file
     and parses the data. The class assumes that the polciies in the xml file
-    are divided into set of 'SECTION' tags. Each 'SECTION' tag having a single
+    are divided into a set of 'SECTION' tags. Each 'SECTION' tag having a single
     'SUBTITLE' and 'SUBTEXT' tag within them.
 
     Parameters
@@ -19,9 +25,9 @@ class PolicyParser():
     ----------
     root : xml.etree.ElementTree
         Root of the xml file
-    sub_element_names : list
-        List of strings
-    privacy_policy : list
+    sub_element_names : List
+        List of name of sub_elements in 'SECTION' tag
+    privacy_policy : List
         List of all the text in the privacy policy as a list
     """
 
@@ -41,6 +47,12 @@ class PolicyParser():
             xml.etree.ElementTree.Element - 'SECTION' of a privacy policy
         sub_elt_name : String
             Either 'SUBTITLE' or 'SUBTEXT'
+
+        Returns
+        -------
+        sub_elt_text : String
+            String of the sub-element, either SUBTITLE,
+            or SUBTEXT.
         """
         sub_elt_text = element.find(sub_elt_name).text
 
@@ -57,6 +69,11 @@ class PolicyParser():
         ----------
         element : Element
             xml.etree.ElementTree.Element - 'SECTION' of the root
+
+        Returns
+        -------
+        section_text : List
+            List of text for each text.
         """
         section_text = []
 
@@ -71,10 +88,36 @@ class PolicyParser():
 
         Returns
         -------
-        privacy_policy : list
+        privacy_policy : List
             Privacy policy as a list of strings
+            Each item in the list is either a 'SUBTITLE' or 'SUBTEXT' tag
         """
         for sections in self.root:
             self.privacy_policy.extend(self.get_subtitle_and_text(sections))
 
         return self.privacy_policy
+
+def check_filepath(ctx, param, value):
+    """Validates that the filepath entered is correct"""
+
+    try:
+        assert path.exists(value)
+        return value
+    except AssertionError:
+        raise click.BadParameter('The path to the file does not exist.')
+
+
+@click.command()
+@click.option('--filepath', prompt='Enter file path',
+              callback=check_filepath,
+              help='Path to the policy xml file')
+def main(filepath):
+    "MAIN"
+
+    xml_file = ET.parse(filepath)
+    parser = PolicyParser(xml_file.getroot())
+
+    print(parser.get_privacy_policy())
+
+if __name__ == '__main__':
+    main() #pylint: disable=E1120
