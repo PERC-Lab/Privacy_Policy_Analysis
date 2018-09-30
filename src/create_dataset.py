@@ -1,10 +1,12 @@
-"""Module defining the class for creating the privacy policy dataset"""
+"""Module for refining the 1,010 privacy policy corpus"""
 
-import os
 import xml.etree.ElementTree as ET
+import json
+import os
 from os import path
 
 from nltk.tokenize import sent_tokenize
+import click
 
 from policy_parser import PolicyParser
 
@@ -12,7 +14,7 @@ CWD = os.getcwd()
 
 class PolicyDataset():
     """This class contains methods to extract,
-    create, and modify the dataset
+    create, and modify the privacy policy dataset
 
     Parameters
     ----------
@@ -67,7 +69,6 @@ class PolicyDataset():
         list
             A list of strings
         """
-
         parser = self._get_parser_(file_path)
         return parser.get_privacy_policy()
 
@@ -81,7 +82,6 @@ class PolicyDataset():
 
             if path.isfile(policy_file_path) and policy_file.endswith('xml'):
                 self.dataset[policy_file] = self.tokenize_policy(policy_file_path)
-
 
     def tokenize_policy(self, policy_file_path):
         """Returns a policy as a list of lists.
@@ -108,51 +108,50 @@ class PolicyDataset():
 
         return tokenized_policy
 
-
     def get_dataset(self):
         """Returns the dataset as a list of lists
 
         Returns
         -------
-        list
-            A list of lists. Each inner list
-            being a policy
+        Dictionary
+            Key is the name of the file
+            Value is the extract privacy policy
         """
 
         if self.dataset == {}:
             self._create_dataset()
 
         return self.dataset
-        # dataset is a list of strings. Convert it into list of lists
 
     @staticmethod
     def _tokenize(text, min_num=3):
         """Takes in a string, and returns tokens.
-
         If sentence has less than `min_num` number of tokens, it is disregarded.
-
-        Parameters
-        ----------
-        text : str
-            The string which is to be converted into tokens
-        min_num : int
-            The minimum number of tokens that should be in a sentence (default=3)
-            In case it is -1, then all strings are returned
-
-        Returns
-        -------
-        list
-            List of  sentences with each sentence having
-            at least `min_num` number of tokens
         """
         tokens = text.split()
-
         return None if len(tokens) < min_num else tokens
 
-    # def save_dataset
+    def save_dataset(self, filepath):
+        """Saves the dataset to the given filepath as a json file"""
+        assert self.dataset != {}
+
+        with open(filepath, 'w') as file_path:
+            json.dump(self.dataset, file_path)
+
+@click.command()
+@click.option('--dataset_path',
+              prompt='Enter path to corpus folder',
+              help='Path to the folder that contain all the privacy policies')
+@click.option('--json_file',
+              prompt='Enter the path to the json file',
+              help='File path to save the dataset as a json file')
+def main(dataset_path, json_file):
+    dataset_creator = PolicyDataset(dataset_path)
+
+    dataset = dataset_creator.get_dataset()
+
+    dataset_creator.save_dataset(json_file)
 
 
-# TODO
-# 1. Segment into sentences
-# 2. Remove sentences with less than 3 words
-# 3. Tokenize them into a list of tokens
+if __name__ == '__main__':
+    main() #pylint: disable=E1120
